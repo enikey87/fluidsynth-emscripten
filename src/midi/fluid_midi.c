@@ -23,7 +23,6 @@
 #include "fluid_synth.h"
 #include "fluid_settings.h"
 
-
 static int fluid_midi_event_length(unsigned char event);
 static int fluid_isasciistring(char *s);
 static long fluid_getlength(const unsigned char *s);
@@ -564,6 +563,15 @@ fluid_midi_file_read_track(fluid_midi_file *mf, fluid_player_t *player, int num)
     {
         FLUID_LOG(FLUID_ERR, "Unexpected end of file");
         return FLUID_FAILED;
+    }
+
+    fluid_midi_event_t *evt = track->cur;
+
+    while (evt) {
+        if (evt->channel != 9) {
+            evt->channel = num * 10 + evt->channel;
+        }
+        evt = evt->next;
     }
 
     return FLUID_OK;
