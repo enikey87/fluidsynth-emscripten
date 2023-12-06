@@ -5,7 +5,40 @@ This repository is based on [FluidSynth](https://github.com/FluidSynth/fluidsynt
 
 The original README is here: [README.original.md](./README.original.md)
 
-## Build
+## Build (enikey87)
+
+```shell
+
+# Install Python
+sudo apt-get install python3
+# Install CMake (optional, only needed for tests and building Binaryen or LLVM)
+sudo apt-get install cmake
+
+# Get the emsdk repo
+git clone https://github.com/emscripten-core/emsdk.git
+# Enter that directory
+cd emsdk
+# Checkout required version (optional)
+# git checkout tags/3.1.10
+# Download and install the latest SDK tools.
+./emsdk install latest
+# Make the "latest" SDK "active" for the current user. (writes .emscripten file)
+./emsdk activate latest
+# Activate PATH and other environment variables in the current terminal
+source ./emsdk_env.sh
+
+# finally build fluidsynth
+cd ../fluidsynth-emscripten
+mkdir build
+cd build
+# release
+emcmake cmake -Denable-oss=off -DCMAKE_BUILD_TYPE=Release ..
+# debug
+# emcmake cmake -Denable-oss=off -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s EMULATE_FUNCTION_POINTER_CASTS=1 -s INITIAL_MEMORY=256MB -s MAXIMUM_MEMORY=256MB" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s EMULATE_FUNCTION_POINTER_CASTS=1 -s INITIAL_MEMORY=256MB -s MAXIMUM_MEMORY=256MB" ..
+emmake make
+```
+
+## Build (original)
 
 > Tested with Emscripten version 3.1.10.
 
