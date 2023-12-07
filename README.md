@@ -34,7 +34,7 @@ cd build
 # release
 emcmake cmake -Denable-oss=off -DCMAKE_BUILD_TYPE=Release ..
 # debug
-# emcmake cmake -Denable-oss=off -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s EMULATE_FUNCTION_POINTER_CASTS=1 -s INITIAL_MEMORY=256MB -s MAXIMUM_MEMORY=256MB" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s EMULATE_FUNCTION_POINTER_CASTS=1 -s INITIAL_MEMORY=256MB -s MAXIMUM_MEMORY=256MB" ..
+# emcmake cmake -Denable-oss=off -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1" ..
 emmake make
 ```
 
