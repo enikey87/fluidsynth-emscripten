@@ -569,7 +569,7 @@ fluid_midi_file_read_track(fluid_midi_file *mf, fluid_player_t *player, int num)
 
     while (evt) {
         if (evt->channel != 9) {
-            evt->channel = num * 10 + evt->channel;
+            evt->channel = num * NUMBER_OF_RESERVED_CHANNELS_PER_TRACK + evt->channel;
         }
         evt = evt->next;
     }

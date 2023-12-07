@@ -40,6 +40,7 @@ fluid_midi_event_t *fluid_midi_parser_parse(fluid_midi_parser_t *parser, unsigne
 
 #define MAX_NUMBER_OF_TRACKS 128
 #define MAX_NUMBER_OF_CHANNELS 256
+#define NUMBER_OF_RESERVED_CHANNELS_PER_TRACK 10
 
 enum fluid_midi_event_type
 {
