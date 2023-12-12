@@ -9,7 +9,8 @@ cd ../emsdk
 source ./emsdk_env.sh
 
 cd ../fluidsynth-emscripten
+rm -rf build
 mkdir -p build
 cd build
-emcmake cmake -Denable-oss=off -DCMAKE_BUILD_TYPE=Release ..
+emcmake cmake -Denable-oss=off -Denable-separate-wasm=on -DCMAKE_BUILD_TYPE=Release ..
 emmake make
