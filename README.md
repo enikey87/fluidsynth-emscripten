@@ -5,40 +5,18 @@ This repository is based on [FluidSynth](https://github.com/FluidSynth/fluidsynt
 
 The original README is here: [README.original.md](./README.original.md)
 
-## Build (enikey87)
+## Build (from enikey87)
 
+In order to build WebAssembly version of fluidsynth by yourself, just following:
 ```shell
-
-# Install Python
-sudo apt-get install python3
-# Install CMake (optional, only needed for tests and building Binaryen or LLVM)
-sudo apt-get install cmake
-
-# Get the emsdk repo
-git clone https://github.com/emscripten-core/emsdk.git
-# Enter that directory
-cd emsdk
-# Checkout required version (optional)
-# git checkout tags/3.1.10
-# Download and install the latest SDK tools.
-./emsdk install latest
-# Make the "latest" SDK "active" for the current user. (writes .emscripten file)
-./emsdk activate latest
-# Activate PATH and other environment variables in the current terminal
-source ./emsdk_env.sh
-
-# finally build fluidsynth
-cd ../fluidsynth-emscripten
-mkdir build
-cd build
-# release
-emcmake cmake -Denable-oss=off -DCMAKE_BUILD_TYPE=Release ..
-# debug
-# emcmake cmake -Denable-oss=off -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1" ..
-emmake make
+./build-wasm.sh
+```
+For debug build:
+```shell
+DEBUG=1 ./build-wasm.sh
 ```
 
-## Build (original)
+## Build (from jet2jet)
 
 > Tested with Emscripten version 3.1.10.
 
