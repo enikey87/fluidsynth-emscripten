@@ -5,15 +5,24 @@ This repository is based on [FluidSynth](https://github.com/FluidSynth/fluidsynt
 
 The original README is here: [README.original.md](./README.original.md)
 
-## Build (from enikey87)
+## Build (enikey87)
 
-In order to build WebAssembly version of fluidsynth by yourself, just following:
+In order to build WebAssembly version of fluidsynth by yourself:
 ```shell
 ./build-wasm.sh
 ```
 For debug build:
 ```shell
 DEBUG=1 ./build-wasm.sh
+```
+
+## Build using Docker (enikey87)
+
+fluidsynth also can be built with Docker:
+```shell
+docker-compose build        # to create the Docker image
+docker-compose up           # to create the Docker container and build
+docker-compose run builder  # to build again after any modification
 ```
 
 ## Build (from jet2jet)

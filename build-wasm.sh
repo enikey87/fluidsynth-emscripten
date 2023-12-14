@@ -3,23 +3,28 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
-# Check if the emsdk directory does not exist
-if [ ! -d "../emsdk" ]; then
-    # Clone the emsdk repository into the parent directory
-    git clone https://github.com/emscripten-core/emsdk.git ../emsdk
+if command -v emcmake >/dev/null 2>&1; then
+    echo "emcmake is available"
+    # Proceed with your script that uses emcmake
+else
+    echo "emcmake is not available"
+
+    # Check if the emsdk directory does not exist
+    if [ ! -d "../emsdk" ]; then
+        # Clone the emsdk repository into the parent directory
+        git clone https://github.com/emscripten-core/emsdk.git ../emsdk
+    fi
+
+    cd ../emsdk
+    ./emsdk install latest
+    ./emsdk activate latest
+
+    source ./emsdk_env.sh
+    cd ../fluidsynth-emscripten
 fi
 
-cd ../emsdk
-./emsdk install latest
-./emsdk activate latest
-source ./emsdk_env.sh
-
-cd ../fluidsynth-emscripten
 rm -rf build
 mkdir -p build
-
-# debug
-#
 
 if [ -n "$DEBUG" ]; then
   echo "Configure CMake projects for Debug"
