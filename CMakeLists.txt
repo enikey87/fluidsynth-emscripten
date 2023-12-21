@@ -708,7 +708,7 @@ else (NOT EMSCRIPTEN_SUPPORT)
     if ( NOT enable-separate-wasm )
         SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s SINGLE_FILE=1" )
     endif ( NOT enable-separate-wasm )
-    SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --pre-js ${CMAKE_SOURCE_DIR}/emscripten/src/pre.js -Oz -sEXPORT_NAME=FluidsynthModule -sUSE_ES6_IMPORT_META=0 -sMODULARIZE=1 -sSUPPORT_LONGJMP=0 -sMALLOC=emmalloc -s ENVIRONMENT=web -s INITIAL_MEMORY=67108864 -s ALLOW_MEMORY_GROWTH=1 -s ALLOW_TABLE_GROWTH=1 -s EXPORTED_FUNCTIONS='[${EMSCRIPTEN_EXPORTS_OPTIONS}]' -s 'EXTRA_EXPORTED_RUNTIME_METHODS=[\"ccall\", \"cwrap\", \"FS\",\"addFunction\",\"removeFunction\",\"MEMFS\",\"lengthBytesUTF8\",\"UTF8ArrayToString\",\"UTF8ToString\",\"stringToUTF8Array\",\"stringToUTF8\"]'" )
+    SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --pre-js ${CMAKE_SOURCE_DIR}/emscripten/src/pre.js -Oz -sEXPORT_NAME=FluidsynthModule -sUSE_ES6_IMPORT_META=0 -sMODULARIZE=1 -sSUPPORT_LONGJMP=0 -sMALLOC=emmalloc -s ENVIRONMENT=web,worker -s INITIAL_MEMORY=67108864 -s ALLOW_MEMORY_GROWTH=1 -s ALLOW_TABLE_GROWTH=1 -s EXPORTED_FUNCTIONS='[${EMSCRIPTEN_EXPORTS_OPTIONS}]' -s 'EXTRA_EXPORTED_RUNTIME_METHODS=[\"ccall\", \"cwrap\", \"FS\",\"addFunction\",\"removeFunction\",\"MEMFS\",\"lengthBytesUTF8\",\"UTF8ArrayToString\",\"UTF8ToString\",\"stringToUTF8Array\",\"stringToUTF8\"]'" )
     SET( CMAKE_EXECUTABLE_SUFFIX ".js" )
 
     find_package ( PkgConfig REQUIRED )
