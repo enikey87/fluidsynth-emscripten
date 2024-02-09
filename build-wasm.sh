@@ -24,7 +24,12 @@ else
 fi
 
 rm -rf build
+rm -rf dist
+
+# Build separated wasm file + js file
+
 mkdir -p build
+mkdir -p dist
 
 if [ -n "$DEBUG" ]; then
   echo "Configure CMake projects for Debug"
@@ -35,3 +40,23 @@ else
 fi
 
 emmake make -C build
+
+cp build/src/libfluidsynth-2.3.0.js dist
+cp build/src/libfluidsynth-2.3.0.wasm dist
+
+# Build all-in-one version with wasm code inlined into js
+
+rm -rf build
+mkdir -p build
+
+if [ -n "$DEBUG" ]; then
+  echo "Configure CMake projects for Debug"
+  emcmake cmake -B build -Denable-oss=off -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1" .
+else
+  echo "Configure CMake projects for Release"
+  emcmake cmake -B build -Denable-oss=off -DCMAKE_BUILD_TYPE=Release .
+fi
+
+emmake make -C build
+
+cp build/src/libfluidsynth-2.3.0.js dist/libfluidsynth-2.3.0-all-in-one.js
