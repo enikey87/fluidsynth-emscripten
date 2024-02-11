@@ -33,7 +33,7 @@ mkdir -p dist
 
 if [ -n "$DEBUG" ]; then
   echo "Configure CMake projects for Debug"
-  emcmake cmake -B build -Denable-oss=off  -Denable-separate-wasm=on -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1" .
+  emcmake cmake -B build -Denable-oss=off -Denable-separate-wasm=on -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1" .
 else
   echo "Configure CMake projects for Release"
   emcmake cmake -B build -Denable-oss=off -Denable-separate-wasm=on -DCMAKE_BUILD_TYPE=Release .
@@ -44,6 +44,23 @@ emmake make -C build
 cp build/src/libfluidsynth-2.3.0.js dist
 cp build/src/libfluidsynth-2.3.0.wasm dist
 
+# Build ES6 version
+
+rm -rf build
+mkdir -p build
+
+if [ -n "$DEBUG" ]; then
+  echo "Configure CMake projects for Debug"
+  emcmake cmake -B build -Denable-oss=off -Denable-separate-wasm=on -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s EXPORT_ES6=1" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s EXPORT_ES6=1" .
+else
+  echo "Configure CMake projects for Release"
+  emcmake cmake -B build -Denable-oss=off -Denable-separate-wasm=on -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-s EXPORT_ES6=1" -DCMAKE_CXX_FLAGS="-s EXPORT_ES6=1" .
+fi
+
+emmake make -C build
+
+cp build/src/libfluidsynth-2.3.0.js dist/libfluidsynth-2.3.0-es6.js
+
 # Build all-in-one version with wasm code inlined into js
 
 rm -rf build
@@ -51,10 +68,10 @@ mkdir -p build
 
 if [ -n "$DEBUG" ]; then
   echo "Configure CMake projects for Debug"
-  emcmake cmake -B build -Denable-oss=off -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1" .
+  emcmake cmake -B build -Denable-oss=off -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s EXPORT_ES6=1" -DCMAKE_CXX_FLAGS="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1 -s EXPORT_ES6=1" .
 else
   echo "Configure CMake projects for Release"
-  emcmake cmake -B build -Denable-oss=off -DCMAKE_BUILD_TYPE=Release .
+  emcmake cmake -B build -Denable-oss=off -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-s EXPORT_ES6=1" -DCMAKE_CXX_FLAGS="-s EXPORT_ES6=1" .
 fi
 
 emmake make -C build
