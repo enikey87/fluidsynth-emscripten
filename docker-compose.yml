@@ -5,4 +5,4 @@ services:
     build: .
     volumes:
       - .:/code
-    command: sh build-wasm.sh
+    command: sh build.sh
