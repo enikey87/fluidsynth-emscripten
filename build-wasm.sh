@@ -62,7 +62,14 @@ compile_libfluidsynth() {
 rm -rf dist
 mkdir -p dist
 
-# Build variants
+# Build RELEASE variants
 compile_libfluidsynth "" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
 compile_libfluidsynth "-all-in-one" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
 compile_libfluidsynth "-all-in-one-umd" "-Denable-separate-wasm=off" "" # UMD + INLINE WASM
+
+# Build DEBUG variants
+DEBUG=1
+
+compile_libfluidsynth "-debug" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
+compile_libfluidsynth "-all-in-one-debug" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
+compile_libfluidsynth "-all-in-one-umd-debug" "-Denable-separate-wasm=off" "" # UMD + INLINE WASM
