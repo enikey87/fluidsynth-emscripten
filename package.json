@@ -1,0 +1,34 @@
+{
+  "name": "@enikey87/fluidsynth-emscripten",
+  "version": "0.0.1",
+  "description": "Fluidsynth 2.3.0 compiled with emscripten",
+  "exports": {
+    "./all-in-one": "./dist/libfluidsynth-2.3.0-all-in-one.js",
+    "./all-in-one-debug": "./dist/libfluidsynth-2.3.0-all-in-one-debug.js",
+    "./all-in-one-umd": "./dist/libfluidsynth-2.3.0-all-in-one-umd.js",
+    "./all-in-one-umd-debug": "./dist/libfluidsynth-2.3.0-all-in-one-umd-debug.js"
+  },
+  "directories": {
+    "doc": "doc",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no tests\" && exit 1",
+    "build": "docker-compose build && docker-compose up",
+    "clean": "rm -rf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enikey87/fluidsynth-emscripten.git"
+  },
+  "keywords": [
+    "fluidsynth",
+    "emscripten"
+  ],
+  "author": "enikey87@gmail.com",
+  "license": "LGPL",
+  "bugs": {
+    "url": "https://github.com/enikey87/fluidsynth-emscripten/issues"
+  },
+  "homepage": "https://github.com/enikey87/fluidsynth-emscripten#readme"
+}
