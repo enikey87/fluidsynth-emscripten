@@ -10,7 +10,7 @@ The original README is here: [README.original.md](./README.original.md)
 In order to build WebAssembly version of fluidsynth by yourself:
 ```shell
 # All variants of libfluidsynth-X.X.X.js + libfuluidsynth-X.X.X.wasm files will be stored to ./dist 
-./build-wasm.sh
+./build.sh
 ```
 
 ## Build with Docker (enikey87)
