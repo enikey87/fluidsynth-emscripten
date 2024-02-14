@@ -1,6 +1,6 @@
 {
   "name": "@enikey87/fluidsynth-emscripten",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Fluidsynth 2.3.0 compiled with emscripten",
   "type": "module",
   "main": "./dist/libfluidsynth-2.3.0.js",
@@ -10,9 +10,7 @@
     "./libfluidsynth.wasm": "./dist/libfluidsynth-2.3.0.wasm",
     "./libfluidsynth-debug.wasm": "./dist/libfluidsynth-2.3.0-debug.wasm",
     "./all-in-one": "./dist/libfluidsynth-2.3.0-all-in-one.js",
-    "./all-in-one-debug": "./dist/libfluidsynth-2.3.0-all-in-one-debug.js",
-    "./all-in-one-umd": "./dist/libfluidsynth-2.3.0-all-in-one-umd.js",
-    "./all-in-one-umd-debug": "./dist/libfluidsynth-2.3.0-all-in-one-umd-debug.js"
+    "./all-in-one-debug": "./dist/libfluidsynth-2.3.0-all-in-one-debug.js"
   },
   "files": [
     "dist/**/*"
