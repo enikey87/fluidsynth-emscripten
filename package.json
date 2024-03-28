@@ -1,6 +1,6 @@
 {
   "name": "@enikey87/fluidsynth-emscripten",
-  "version": "0.0.2",
+  "version": "0.1.0-idbfs-0",
   "description": "Fluidsynth 2.3.0 compiled with emscripten",
   "type": "module",
   "main": "./dist/libfluidsynth-2.3.0.js",
