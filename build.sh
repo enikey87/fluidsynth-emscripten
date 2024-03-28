@@ -40,10 +40,10 @@ compile_libfluidsynth() {
   if [ -n "$DEBUG" ]; then
     echo "Configure CMake projects for Debug"
     local c_debug_flags="-Wbad-function-cast -Wcast-function-type -g4 -sSAFE_HEAP=1 -sASSERTIONS=1"
-    emcmake cmake -B build -Denable-oss=off ${extra_cmake_flags} -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="${c_debug_flags} ${extra_c_flags}" -DCMAKE_CXX_FLAGS="${c_debug_flags} ${extra_cxx_flags}" .
+    emcmake cmake -B build ${feature_flags} -Denable-oss=off ${extra_cmake_flags} -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="${c_debug_flags} ${extra_c_flags}" -DCMAKE_CXX_FLAGS="${c_debug_flags} ${extra_cxx_flags}" .
   else
     echo "Configure CMake projects for Release"
-    emcmake cmake -B build -Denable-oss=off ${extra_cmake_flags} -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="${extra_c_flags}" -DCMAKE_CXX_FLAGS="${extra_cxx_flags}" .
+    emcmake cmake -B build ${feature_flags} -Denable-oss=off ${extra_cmake_flags} -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="${extra_c_flags}" -DCMAKE_CXX_FLAGS="${extra_cxx_flags}" .
   fi
 
   # Build the project
@@ -63,11 +63,11 @@ rm -rf dist
 mkdir -p dist
 
 # Build RELEASE variants
-compile_libfluidsynth "" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
-compile_libfluidsynth "-all-in-one" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
+compile_libfluidsynth "" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1 -lidbfs.js " # ES6 + WASM
+compile_libfluidsynth "-all-in-one" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1 -lidbfs.js " # ES6 + INLINE WASM
 
 # Build DEBUG variants
 DEBUG=1
 
-compile_libfluidsynth "-debug" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
-compile_libfluidsynth "-all-in-one-debug" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
+compile_libfluidsynth "-debug" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1 -lidbfs.js " # ES6 + WASM
+compile_libfluidsynth "-all-in-one-debug" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1 -lidbfs.js" # ES6 + INLINE WASM
