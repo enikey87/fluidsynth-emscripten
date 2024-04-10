@@ -62,12 +62,33 @@ compile_libfluidsynth() {
 rm -rf dist
 mkdir -p dist
 
-# Build RELEASE variants
-compile_libfluidsynth "" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
-compile_libfluidsynth "-all-in-one" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
+function compile_libfluidsynth_configurations () {
+  DEBUG=0
 
-# Build DEBUG variants
-DEBUG=1
+  # Build RELEASE variants
+  compile_libfluidsynth "${LIBFLUIDSYNTH_OUTPUT_FILENAME_PREFIX}" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
+  compile_libfluidsynth "${LIBFLUIDSYNTH_OUTPUT_FILENAME_PREFIX}-all-in-one" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
 
-compile_libfluidsynth "-debug" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
-compile_libfluidsynth "-all-in-one-debug" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
+  # temporary disable building of debug artifacts
+  return 0
+
+  compile_libfluidsynth "${LIBFLUIDSYNTH_OUTPUT_FILENAME_PREFIX}-debug" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
+  compile_libfluidsynth "${LIBFLUIDSYNTH_OUTPUT_FILENAME_PREFIX}-all-in-one-debug" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
+}
+
+# Configuration without sf3 support
+compile_libfluidsynth_configurations
+
+# Configuration with sf3 support though libsndfile addon
+LIBFLUIDSYNTH_DEPS_PKG_CONFIG_PATH=$(readlink -f ../libsndfile-emscripten/deps/lib/pkgconfig)
+
+if [ ! -d "$LIBFLUIDSYNTH_DEPS_PKG_CONFIG_PATH" ]; then
+    echo "Error: libsndfile artifacts directory '$LIBFLUIDSYNTH_DEPS_PKG_CONFIG_PATH' does not exist."
+    exit 1
+fi
+
+export PKG_CONFIG_PATH=${LIBFLUIDSYNTH_DEPS_PKG_CONFIG_PATH}
+
+LIBFLUIDSYNTH_OUTPUT_FILENAME_PREFIX="-sf3"
+
+compile_libfluidsynth_configurations
