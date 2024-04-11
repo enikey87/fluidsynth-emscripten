@@ -1,15 +1,18 @@
 {
   "name": "@enikey87/fluidsynth-emscripten",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Fluidsynth 2.3.0 compiled with emscripten",
   "type": "module",
   "main": "./dist/libfluidsynth-2.3.0.js",
   "exports": {
     ".": "./dist/libfluidsynth-2.3.0.js",
+    "./sf3": "./dist/libfluidsynth-2.3.0-sf3.js",
     "./debug": "./dist/libfluidsynth-2.3.0-debug.js",
     "./libfluidsynth.wasm": "./dist/libfluidsynth-2.3.0.wasm",
+    "./libfluidsynth-sf3.wasm": "./dist/libfluidsynth-2.3.0-sf3.wasm",
     "./libfluidsynth-debug.wasm": "./dist/libfluidsynth-2.3.0-debug.wasm",
     "./all-in-one": "./dist/libfluidsynth-2.3.0-all-in-one.js",
+    "./all-in-one-sf3": "./dist/libfluidsynth-2.3.0-all-in-one-sf3.js",
     "./all-in-one-debug": "./dist/libfluidsynth-2.3.0-all-in-one-debug.js"
   },
   "files": [
