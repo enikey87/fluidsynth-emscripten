@@ -63,14 +63,13 @@ rm -rf dist
 mkdir -p dist
 
 function compile_libfluidsynth_configurations () {
-  DEBUG=0
+  unset DEBUG
 
   # Build RELEASE variants
   compile_libfluidsynth "${LIBFLUIDSYNTH_OUTPUT_FILENAME_PREFIX}" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
   compile_libfluidsynth "${LIBFLUIDSYNTH_OUTPUT_FILENAME_PREFIX}-all-in-one" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
 
-  # temporary disable building of debug artifacts
-  return 0
+  DEBUG=1
 
   compile_libfluidsynth "${LIBFLUIDSYNTH_OUTPUT_FILENAME_PREFIX}-debug" "-Denable-separate-wasm=on" "-s EXPORT_ES6=1" # ES6 + WASM
   compile_libfluidsynth "${LIBFLUIDSYNTH_OUTPUT_FILENAME_PREFIX}-all-in-one-debug" "-Denable-separate-wasm=off" "-s EXPORT_ES6=1" # ES6 + INLINE WASM
