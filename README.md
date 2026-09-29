@@ -92,6 +92,13 @@ wrap/mix according to the normal FluidSynth group semantics. As before, callers
 must zero output buffers before rendering. General SMF channel layouts and
 device-specific SysEx channel reassignment are not supported by this mode.
 
+### SF3 sample levels
+
+Upstream (since 2.3.7) asks libsndfile to scale every Ogg Vorbis sample by its own peak, which
+fixes clipping of samples above full scale but also lifts every quieter sample to full scale and
+with it changes the balance between instruments. This fork scales only samples whose decoded
+peak exceeds 1.0; all others keep the level stored in the soundfont.
+
 * Currently only several APIs are tested. Some APIs such as for drivers may not work.
 
 ## License

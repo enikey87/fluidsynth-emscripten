@@ -10,6 +10,9 @@ const base = path.basename(pkg.main, '.js')
 const dist = path.join(root, 'dist')
 const sf2 = readFileSync(path.join(root, 'sf2', 'VintageDreamsWaves-v2.sf2'))
 const sf3 = readFileSync(path.join(root, 'sf2', 'VintageDreamsWaves-v2.sf3'))
+// fixtures/make-level-fixture.py: program 0 peaks at 0.25, program 1 at 1.0 (1.5 inside the sf3's Ogg stream).
+const levelSf2 = readFileSync(path.join(root, 'test', 'wasm', 'fixtures', 'level.sf2'))
+const levelSf3 = readFileSync(path.join(root, 'test', 'wasm', 'fixtures', 'level.sf3'))
 const exportsTxt = readFileSync(path.join(root, 'emscripten', 'exports.txt'), 'utf8')
 const expectedExports = [...exportsTxt.matchAll(/"(_[A-Za-z0-9_]+)"/g)].map(m => m[1])
 const runtimeMethods = ['ccall', 'cwrap', 'FS', 'addFunction', 'removeFunction', 'MEMFS',
@@ -121,6 +124,28 @@ const checks = {
     }
     deleteSynth(M, s)
     return result
+  },
+
+  // An Ogg sample must play as loud as its PCM twin: neither lifted to full scale nor clipped.
+  level (M, variant) {
+    if (!variant.sf3) return 'n/a without sf3'
+    const frames = 22050
+    const rms = (name, bytes, program) => {
+      const s = newSynth(M)
+      const id = loadSoundfont(M, s.synth, name, bytes)
+      assert(M._fluid_synth_program_select(s.synth, 0, id, 0, program) === 0, `${name}: no program ${program}`)
+      M._fluid_synth_noteon(s.synth, 0, 69, 100)
+      const value = Math.sqrt(energy(M, s.synth, frames) / frames)
+      deleteSynth(M, s)
+      return value
+    }
+    const deltas = [0, 1].map(program => {
+      const pcm = rms('level.sf2', levelSf2, program)
+      assert(pcm > 1e-3, `level.sf2 program ${program} is silent`)
+      return 20 * Math.log10(rms('level.sf3', levelSf3, program) / pcm)
+    })
+    deltas.forEach((delta, program) => assert(Math.abs(delta) < 0.5, `program ${program}: sf3 is ${delta.toFixed(2)} dB off its sf2 twin`))
+    return `quiet ${deltas[0].toFixed(2)} dB, loud ${deltas[1].toFixed(2)} dB`
   },
 
   callback (M) {

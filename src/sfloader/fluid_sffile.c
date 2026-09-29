@@ -2649,6 +2649,7 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
     };
     sfvio_data_t sfdata;
     short *wav_data = NULL;
+    double peak = 0.0;
 
     if((start_byte > sf->samplesize) || (end_byte > sf->samplesize))
     {
@@ -2715,7 +2716,11 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
     // https://github.com/FluidSynth/fluidsynth/issues/1380
     // and
     // https://github.com/libsndfile/libsndfile/issues/194
-    sf_command(sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
+    // The scale is 1/peak, so applied unconditionally it lifts every quieter sample to full scale.
+    if(sf_command(sndfile, SFC_CALC_SIGNAL_MAX, &peak, sizeof(peak)) == 0 && peak > 1.0)
+    {
+        sf_command(sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
+    }
 
     /* Automatically decompresses the Ogg Vorbis data to 16-bit PCM */
     if(sf_readf_short(sndfile, wav_data, sfinfo.frames) < sfinfo.frames)

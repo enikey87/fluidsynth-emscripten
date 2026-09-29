@@ -1,6 +1,6 @@
 {
   "name": "@songsterr/fluidsynth-emscripten",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "description": "FluidSynth 2.6.1 compiled with emscripten",
   "type": "module",
   "main": "./dist/libfluidsynth-2.6.1.js",
