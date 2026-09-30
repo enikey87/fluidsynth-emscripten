@@ -4,6 +4,16 @@
 set -e
 
 source "$(dirname "$0")/emsdk-env.sh"
+# Submodules: gcem (CMake < 3.18, as in the emsdk image, cannot download it) and the signalsmith limiter/reverbs.
+# In CI the checkout belongs to the clone container's user; git 2.25 in the emsdk image only honours
+# safe.directory from the global config, and only as explicit paths.
+repo_dir=$(cd "$(dirname "$0")" && pwd)
+if [ ! -f "$repo_dir/gcem/include/gcem.hpp" ] || [ ! -f "$repo_dir/signalsmith-audio-basics/CMakeLists.txt" ]; then
+    for dir in "$repo_dir" "$repo_dir/gcem" "$repo_dir/signalsmith-audio-basics"; do
+        git config --global --get-all safe.directory 2>/dev/null | grep -qx "$dir" || git config --global --add safe.directory "$dir"
+    done
+    git -C "$repo_dir" submodule update --init -- gcem signalsmith-audio-basics
+fi
 
 # Function to compile libfluidsynth with specified flags and output suffix
 compile_libfluidsynth() {
@@ -32,11 +42,11 @@ compile_libfluidsynth() {
   emmake make -C build
 
   # Replace the hardcoded .wasm filename with the variant
-  sed -i "s/libfluidsynth-2.3.0.wasm/libfluidsynth-2.3.0${suffix}.wasm/g" build/src/libfluidsynth-2.3.0.js
+  sed -i "s/libfluidsynth-2.6.1.wasm/libfluidsynth-2.6.1${suffix}.wasm/g" build/src/libfluidsynth-2.6.1.js
 
   # Move the artifacts to the dist folder with the specified suffix
-  cp build/src/libfluidsynth-2.3.0.js "dist/libfluidsynth-2.3.0${suffix}.js"
-  [ -f build/src/libfluidsynth-2.3.0.wasm ] && cp build/src/libfluidsynth-2.3.0.wasm "dist/libfluidsynth-2.3.0${suffix}.wasm"
+  cp build/src/libfluidsynth-2.6.1.js "dist/libfluidsynth-2.6.1${suffix}.js"
+  [ -f build/src/libfluidsynth-2.6.1.wasm ] && cp build/src/libfluidsynth-2.6.1.wasm "dist/libfluidsynth-2.6.1${suffix}.wasm"
   echo "*** BUILD VARIANT FOR SUFFIX '${suffix}' COMPLETE *** "
 }
 

@@ -7,40 +7,40 @@ workflows:
         image: debian:bookworm-slim
         resources:
           cpu: 2000
-          memory: 1000
+          memory: 4000
         commands:
-          - apt-get update -qq
-          - apt-get install -y -qq --no-install-recommends cmake make gcc g++ pkg-config libglib2.0-dev libsndfile1-dev
-          - cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Release -Denable-oss=off
-          - make -C build-native -j"$(nproc)" check
-
+        - apt-get update -qq >/dev/null
+        - apt-get install -y -qq --no-install-recommends git ca-certificates cmake make gcc g++ pkg-config libglib2.0-dev libsndfile1-dev >/dev/null
+        - git config --global --add safe.directory '*'
+        - git submodule update --init -- gcem signalsmith-audio-basics
+        - cmake -S . -B build-native -DCMAKE_BUILD_TYPE=Release -Denable-oss=off -Denable-network=off
+        - s=0; make -C build-native -j4 check > /var/www/check-output.txt 2>&1 || s=$?; tail -n 120 /var/www/check-output.txt; { echo '```'; grep -E "tests (passed|failed)|\*\*\*|The following tests FAILED|error:|Error [0-9]" -A12 /var/www/check-output.txt | head -80 || true; echo '```'; } > /var/www/check.md; exit $s
+        artifacts: ${stepName}.md
   build:
     when:
       event: push
     pipeline:
       wasm:
         image: emscripten/emsdk:3.1.10
-        artifacts: "${stepName}.md"
+        artifacts: ${stepName}.md
         resources:
           cpu: 4000
           memory: 2000
         commands:
-          - apt-get update -qq
-          - apt-get install -y -qq --no-install-recommends autoconf automake libtool pkg-config wget xz-utils ca-certificates
-          - ./build_libsndfile.sh
-          - ./build.sh
-          - cp -r dist /var/www/
-          - ls -l dist | awk -v link="$BUILDERR_ARTIFACTS_LINK" 'NR>1 {printf "- [%s](%s/dist/%s) %d bytes\n", $9, link, $9, $5}' > /var/www/wasm.md
-
+        - apt-get update -qq >/dev/null
+        - apt-get install -y -qq --no-install-recommends autoconf automake libtool pkg-config wget xz-utils ca-certificates >/dev/null
+        - pip3 install cmake==3.28.3
+        - ./build_libsndfile.sh
+        - ./build.sh
+        - cp -r dist /var/www/
+        - ls -l dist | awk -v link="$BUILDERR_ARTIFACTS_LINK" 'NR>1 {printf "- [%s](%s/dist/%s) %d bytes\n", $9, link, $9, $5}' > /var/www/wasm.md
       smoke:
         image: node:22-slim
         commands:
-          - node test/wasm/smoke.mjs
-
+        - node test/wasm/smoke.mjs
       publish:
         when:
           branch: main
-        # Not node:*: a Vault secret keyed on that image name overrides NPM_TOKEN with a stale value.
         image: hub-eu.terra.songsterr.com/builderr-npm-24-slim
         commands:
-          - ./publish.sh
+        - ./publish.sh

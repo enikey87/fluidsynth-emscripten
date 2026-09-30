@@ -6,6 +6,8 @@ RUN apt-get update \
           automake autoconf libtool \
           pkg-config wget xz-utils ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+# signalsmith-audio-basics needs CMake >= 3.24; the emsdk image ships 3.16.
+RUN pip3 install cmake==3.28.3
 WORKDIR /code
 
 # From /code, build.sh resolves ../libsndfile-emscripten to /libsndfile-emscripten.

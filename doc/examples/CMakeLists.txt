@@ -19,22 +19,13 @@
 
 # CMake based build system. Pedro Lopez-Cabanillas <plcl@users.sf.net>
 
-unset ( BUILD_DEMOS )
-if ( NOT EMSCRIPTEN_SUPPORT )
-  set ( BUILD_DEMOS on )
-elseif ( NOT BUILD_SHARED_LIBS )
-  set ( BUILD_DEMOS on )
-else ( NOT EMSCRIPTEN_SUPPORT )
-  set ( BUILD_DEMOS off )
-endif ( NOT EMSCRIPTEN_SUPPORT )
+include ( FluidUnitTest )
+add_custom_target ( demo )
 
-if ( BUILD_DEMOS )
-  include ( FluidUnitTest )
-  add_custom_target ( demo )
-
-  ADD_FLUID_DEMO ( example )
-  ADD_FLUID_DEMO ( fluidsynth_arpeggio )
-  ADD_FLUID_DEMO ( fluidsynth_fx )
-  ADD_FLUID_DEMO ( fluidsynth_metronome )
-  ADD_FLUID_DEMO ( fluidsynth_simple )
-endif ( BUILD_DEMOS )
+ADD_FLUID_DEMO ( example )
+ADD_FLUID_DEMO ( fluidsynth_arpeggio )
+ADD_FLUID_DEMO ( fluidsynth_fx )
+ADD_FLUID_DEMO ( fluidsynth_metronome )
+ADD_FLUID_DEMO ( fluidsynth_simple )
+ADD_FLUID_DEMO ( fluidsynth_instruments )
+ADD_FLUID_DEMO ( fluidsynth_enumsettings CXX )

@@ -13,9 +13,8 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * License along with this library; if not, see
+ * <https://www.gnu.org/licenses/>.
  */
 
 /* fluid_alsa.c
@@ -25,6 +24,7 @@
  */
 
 #include "fluid_synth.h"
+#include "fluid_audio_convert.h"
 #include "fluid_midi.h"
 #include "fluid_adriver.h"
 #include "fluid_mdriver.h"
@@ -34,15 +34,21 @@
 
 #define ALSA_PCM_NEW_HW_PARAMS_API
 #include <alsa/asoundlib.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <math.h>
-
-#include "fluid_lash.h"
 
 #define FLUID_ALSA_DEFAULT_MIDI_DEVICE  "default"
 #define FLUID_ALSA_DEFAULT_SEQ_DEVICE   "default"
 
 #define BUFFER_LENGTH 512
+
+#ifndef ESTRPIPE
+#define ESTRPIPE EPIPE
+#endif
+
+#ifndef EBADFD
+#define EBADFD EBADF
+#endif
 
 /** fluid_alsa_audio_driver_t
  *
@@ -126,6 +132,7 @@ typedef struct
     fluid_atomic_int_t should_quit;
     int port_count;
     int autoconn_inputs;
+    int dyn_sample_loading_is_active;
     snd_seq_addr_t autoconn_dest;
 } fluid_alsa_seq_driver_t;
 
@@ -645,7 +652,7 @@ void fluid_alsa_rawmidi_driver_settings(fluid_settings_t *settings)
     while((err == 0) && (card >= 0))
     {
         int device = -1;
-        snd_ctl_t *ctl;
+        snd_ctl_t *ctl = NULL;
         char card_name[32];
 
         FLUID_SNPRINTF(card_name, sizeof(card_name), "hw:%d", card);
@@ -707,7 +714,12 @@ void fluid_alsa_rawmidi_driver_settings(fluid_settings_t *settings)
             }
         }
 
-        snd_ctl_close(ctl);
+        if(ctl)
+        {
+            snd_ctl_close(ctl);
+            ctl = NULL;
+        }
+
         err = snd_card_next(&card);
     }
 }
@@ -1227,6 +1239,7 @@ new_fluid_alsa_seq_driver(fluid_settings_t *settings,
     }
 
     fluid_settings_getint(settings, "midi.autoconnect", &dev->autoconn_inputs);
+    fluid_settings_getint(settings, "synth.dynamic-sample-loading", &dev->dyn_sample_loading_is_active);
 
     if(dev->autoconn_inputs)
     {
@@ -1235,19 +1248,6 @@ new_fluid_alsa_seq_driver(fluid_settings_t *settings,
         dev->autoconn_dest.port = 0;
         fluid_alsa_seq_autoconnect(dev);
     }
-
-    /* tell the lash server our client id */
-#ifdef HAVE_LASH
-    {
-        int enable_lash = 0;
-        fluid_settings_getint(settings, "lash.enable", &enable_lash);
-
-        if(enable_lash)
-        {
-            fluid_lash_alsa_client_id(fluid_lash_client, snd_seq_client_id(dev->seq_handle));
-        }
-    }
-#endif /* HAVE_LASH */
 
     fluid_atomic_int_set(&dev->should_quit, 0);
 
@@ -1361,11 +1361,20 @@ fluid_alsa_seq_run(void *d)
                  * (-EPERM) and input event buffer overrun (-ENOSPC) */
                 if(ev < 0)
                 {
-                    /* FIXME - report buffer overrun? */
                     if(ev != -EPERM && ev != -ENOSPC)
                     {
                         FLUID_LOG(FLUID_ERR, "Error while reading ALSA sequencer (code=%d)", ev);
                         fluid_atomic_int_set(&dev->should_quit, 1);
+                    }
+                    else
+                    {
+                        FLUID_LOG(FLUID_WARN, "ALSA sequencer buffer overrun, some MIDI events were lost (code=%d)", ev);
+                        if(dev->dyn_sample_loading_is_active)
+                        {
+                            FLUID_LOG(FLUID_INFO, "Hint: To mitigate buffer overruns, you should consider disabling synth.dynamic-sample-loading!");
+                            // avoid spamming those hints
+                            dev->dyn_sample_loading_is_active = 0;
+                        }
                     }
 
                     break;

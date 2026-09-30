@@ -7,14 +7,14 @@ The original README is here: [README.original.md](./README.original.md)
 
 ## Build (enikey87)
 
-Prerequisites (Debian/Ubuntu): `git python3 wget xz-utils cmake make pkg-config autoconf automake libtool`.
+Prerequisites (Debian/Ubuntu): `git python3 wget xz-utils cmake make pkg-config autoconf automake libtool`; CMake 3.24 or newer (the bundled signalsmith-audio-basics requires it).
 
 ```shell
 ./build_libsndfile.sh   # libsndfile + ogg/vorbis/flac/opus into ../libsndfile-emscripten; build.sh needs it for the sf3 variants
 ./build.sh              # every libfluidsynth-X.X.X*.js / .wasm variant into ./dist
 ```
 
-Both scripts source `emsdk-env.sh`, which installs Emscripten `3.1.10` (override with `EMSDK_VERSION`) into `../emsdk` unless `emcmake` is already on `PATH`. An `emcmake` you provide yourself must run with node < 18: 3.1.10 output calls the global `fetch` node 18+ ships, and autoconf's run test fails with `cannot run C compiled programs`.
+`build.sh` also checks out the `gcem` and `signalsmith-audio-basics` submodules (constexpr math, limiter and reverb engines). Both scripts source `emsdk-env.sh`, which installs Emscripten `3.1.10` (override with `EMSDK_VERSION`) into `../emsdk` unless `emcmake` is already on `PATH`. An `emcmake` you provide yourself must run with node < 18: 3.1.10 output calls the global `fetch` node 18+ ships, and autoconf's run test fails with `cannot run C compiled programs`.
 
 ## Install
 
@@ -42,7 +42,7 @@ prebuilt libsndfile (needed for sf3), so a rebuild only recompiles fluidsynth.
 > Tested with Emscripten version 3.1.10.
 
 1. (Optional) Update `emscripten/exports.txt`, containing export functions for JS program
-    * The script `emscripten/make-exports.js` will update this automatically, gathering functions from `include` directory.
+    * The script `emscripten/make-exports.cjs` will update this automatically, gathering functions from `include` directory.
 2. Make sure that Emscripten is usable on the current environment
 3. Make `build` directory
 4. Enter `build` directory and execute `emcmake cmake -Denable-oss=off -DCMAKE_BUILD_TYPE=Release ..`
@@ -91,6 +91,13 @@ Render all groups with `fluid_synth_process`; fewer output groups intentionally
 wrap/mix according to the normal FluidSynth group semantics. As before, callers
 must zero output buffers before rendering. General SMF channel layouts and
 device-specific SysEx channel reassignment are not supported by this mode.
+
+### SF3 sample levels
+
+Upstream (since 2.3.7) asks libsndfile to scale every Ogg Vorbis sample by its own peak, which
+fixes clipping of samples above full scale but also lifts every quieter sample to full scale and
+with it changes the balance between instruments. This fork scales only samples whose decoded
+peak exceeds 1.0; all others keep the level stored in the soundfont.
 
 * Currently only several APIs are tested. Some APIs such as for drivers may not work.
 

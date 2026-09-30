@@ -13,9 +13,8 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * License along with this library; if not, see
+ * <https://www.gnu.org/licenses/>.
  */
 
 #ifndef _FLUID_MIDI_H
@@ -24,6 +23,10 @@
 #include "fluidsynth_priv.h"
 #include "fluid_sys.h"
 #include "fluid_list.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct _fluid_midi_parser_t fluid_midi_parser_t;
 
@@ -60,7 +63,7 @@ enum fluid_midi_event_type
     MIDI_SONG_SELECT = 0xf3,
     MIDI_TUNE_REQUEST = 0xf6,
     MIDI_EOX = 0xf7,
-    /* system real-time - never in midi files */
+    /* system realtime - never in midi files */
     MIDI_SYNC = 0xf8,
     MIDI_TICK = 0xf9,
     MIDI_START = 0xfa,
@@ -306,7 +309,9 @@ struct _fluid_player_t
     int last_callback_ticks;  /* the last tick number that was passed to player->tick_callback */
     int begin_msec;           /* the time (msec) of the beginning of the file */
     int start_msec;           /* the start time of the last tempo change */
-    int cur_msec;             /* the current time */
+    unsigned int cur_msec;    /* the current time */
+    int end_msec;             /* when >=0, playback is extended until this time (for, e.g., reverb) */
+    char end_pedals_disabled; /* 1 once the pedals have been released after the last midi event, 0 otherwise */
     /* sync mode: indicates the tempo mode the player is driven by (see fluid_player_set_tempo()):
        1, the player is driven by internal tempo (miditempo). This is the default.
        0, the player is driven by external tempo (exttempo)
@@ -330,6 +335,8 @@ struct _fluid_player_t
 
     int channel_isplaying[MAX_NUMBER_OF_CHANNELS]; /* flags indicating channels on which notes have played */
 };
+
+#define FLUID_PLAYER_STOP_GRACE_MS 2000
 
 void fluid_player_settings(fluid_settings_t *settings);
 
@@ -377,5 +384,8 @@ struct _fluid_midi_parser_t
     fluid_midi_event_t event;        /* The event, that is returned to the MIDI driver. */
 };
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _FLUID_MIDI_H */

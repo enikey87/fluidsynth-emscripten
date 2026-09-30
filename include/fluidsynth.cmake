@@ -13,9 +13,8 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * License along with this library; if not, see
+ * <https://www.gnu.org/licenses/>.
  */
 
 #ifndef _FLUIDSYNTH_H
@@ -46,9 +45,6 @@ extern "C" {
 #elif defined(__OS2__)
 #define FLUIDSYNTH_API __declspec(dllexport)
 
-#elif defined(__GNUC__)
-#define FLUIDSYNTH_API __attribute__ ((visibility ("default")))
-
 #elif defined(__EMSCRIPTEN__)
 #if defined(FLUIDSYNTH_DLL_EXPORTS)
 #include <emscripten.h>
@@ -56,6 +52,10 @@ extern "C" {
 #else
 #define FLUIDSYNTH_API
 #endif
+
+#elif defined(__GNUC__)
+#define FLUIDSYNTH_API __attribute__ ((visibility ("default")))
+
 #else
 #define FLUIDSYNTH_API
 

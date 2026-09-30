@@ -10,6 +10,9 @@ const base = path.basename(pkg.main, '.js')
 const dist = path.join(root, 'dist')
 const sf2 = readFileSync(path.join(root, 'sf2', 'VintageDreamsWaves-v2.sf2'))
 const sf3 = readFileSync(path.join(root, 'sf2', 'VintageDreamsWaves-v2.sf3'))
+// fixtures/make-level-fixture.py: program 0 peaks at 0.25, program 1 at 1.0 (1.5 inside the sf3's Ogg stream).
+const levelSf2 = readFileSync(path.join(root, 'test', 'wasm', 'fixtures', 'level.sf2'))
+const levelSf3 = readFileSync(path.join(root, 'test', 'wasm', 'fixtures', 'level.sf3'))
 const exportsTxt = readFileSync(path.join(root, 'emscripten', 'exports.txt'), 'utf8')
 const expectedExports = [...exportsTxt.matchAll(/"(_[A-Za-z0-9_]+)"/g)].map(m => m[1])
 const runtimeMethods = ['ccall', 'cwrap', 'FS', 'addFunction', 'removeFunction', 'MEMFS',
@@ -123,6 +126,28 @@ const checks = {
     return result
   },
 
+  // An Ogg sample must play as loud as its PCM twin: neither lifted to full scale nor clipped.
+  level (M, variant) {
+    if (!variant.sf3) return 'n/a without sf3'
+    const frames = 22050
+    const rms = (name, bytes, program) => {
+      const s = newSynth(M)
+      const id = loadSoundfont(M, s.synth, name, bytes)
+      assert(M._fluid_synth_program_select(s.synth, 0, id, 0, program) === 0, `${name}: no program ${program}`)
+      M._fluid_synth_noteon(s.synth, 0, 69, 100)
+      const value = Math.sqrt(energy(M, s.synth, frames) / frames)
+      deleteSynth(M, s)
+      return value
+    }
+    const deltas = [0, 1].map(program => {
+      const pcm = rms('level.sf2', levelSf2, program)
+      assert(pcm > 1e-3, `level.sf2 program ${program} is silent`)
+      return 20 * Math.log10(rms('level.sf3', levelSf3, program) / pcm)
+    })
+    deltas.forEach((delta, program) => assert(Math.abs(delta) < 0.5, `program ${program}: sf3 is ${delta.toFixed(2)} dB off its sf2 twin`))
+    return `quiet ${deltas[0].toFixed(2)} dB, loud ${deltas[1].toFixed(2)} dB`
+  },
+
   callback (M) {
     let calls = 0
     const fn = M.addFunction((level, msg) => { calls += 1 }, 'viii')
@@ -162,6 +187,49 @@ const checks = {
     M._delete_fluid_player(player)
     deleteSynth(M, s)
     return `done after ${blocks} blocks, tick ${tick}`
+  },
+
+  // The three 2.6 knobs consumers may turn: each must change the rendered audio.
+  knobs (M) {
+    const NOTE_ON = (M, synth) => { M._fluid_synth_program_select(synth, 0, 1, 0, 0); M._fluid_synth_noteon(synth, 0, 60, 127) }
+    const render = (settingsFn, synthFn) => {
+      const settings = M._new_fluid_settings()
+      settingsFn(settings)
+      const synth = M._new_fluid_synth(settings)
+      if (synthFn) synthFn(synth)
+      loadSoundfont(M, synth, 'test.sf2', sf2)
+      NOTE_ON(M, synth)
+      const frames = 8192
+      const l = M._malloc(frames * 4)
+      const r = M._malloc(frames * 4)
+      M._fluid_synth_write_float(synth, frames, l, 0, 1, r, 0, 1)
+      const out = Float32Array.from(new Float32Array(M.HEAPF32.buffer, l, frames))
+      M._free(l)
+      M._free(r)
+      M._delete_fluid_synth(synth)
+      M._delete_fluid_settings(settings)
+      return out
+    }
+    const setStr = (settings, key, value) => { const k = cstr(M, key); const v = cstr(M, value); M._fluid_settings_setstr(settings, k, v); M._free(k); M._free(v) }
+    const setInt = (settings, key, value) => { const k = cstr(M, key); M._fluid_settings_setint(settings, k, value); M._free(k) }
+    const setNum = (settings, key, value) => { const k = cstr(M, key); M._fluid_settings_setnum(settings, k, value); M._free(k) }
+    const differs = (a, b) => a.some((v, i) => Math.abs(v - b[i]) > 1e-6)
+    const peak = a => a.reduce((m, v) => Math.max(m, Math.abs(v)), 0)
+
+    const dat = render(s => setStr(s, 'synth.reverb.engine', 'dat'))
+    const fdn = render(s => setStr(s, 'synth.reverb.engine', 'fdn'))
+    assert(differs(dat, fdn), 'synth.reverb.engine=fdn renders the same audio as dat')
+
+    const loud = s => { setNum(s, 'synth.gain', 10) }
+    const unlimited = render(loud)
+    const limited = render(s => { loud(s); setInt(s, 'synth.limiter.active', 1) })
+    assert(peak(unlimited) > 1, `gain 10 without a limiter should clip: peak ${peak(unlimited)}`)
+    assert(peak(limited) <= 1.0001 && peak(limited) < peak(unlimited), `limiter left peak at ${peak(limited)} (unlimited ${peak(unlimited)})`)
+
+    const interp4 = render(() => {}, synth => M._fluid_synth_set_interp_method(synth, -1, 4))
+    const interp5 = render(() => {}, synth => M._fluid_synth_set_interp_method(synth, -1, 5))
+    assert(differs(interp4, interp5), 'FLUID_INTERP_MID renders the same audio as 4th order')
+    return `reverb fdn≠dat, limiter peak ${peak(unlimited).toFixed(2)}→${peak(limited).toFixed(2)}, interp 5≠4`
   },
 
   leak (M) {
