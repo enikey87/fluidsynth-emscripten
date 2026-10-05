@@ -56,6 +56,7 @@ new_fluid_channel(fluid_synth_t *synth, int num)
     chan->channum = num;
     chan->preset = NULL;
     chan->tuning = NULL;
+    chan->channel_type_app_set = 0;
 
     fluid_channel_init(chan);
     fluid_channel_init_ctrl(chan, 0);
@@ -90,9 +91,12 @@ fluid_channel_init(fluid_channel_t *chan)
     chan->portamentomode = FLUID_CHANNEL_PORTAMENTO_MODE_EACH_NOTE;	/* Default mode */
     /*--- End of poly/mono initialization --------------------------------------*/
 
-    i = chan->synth->per_track_audio
-        ? chan->channum % NUMBER_OF_RESERVED_CHANNELS_PER_TRACK : chan->channum;
-    chan->channel_type = (i == 9) ? CHANNEL_TYPE_DRUM : CHANNEL_TYPE_MELODIC;
+    if(!chan->channel_type_app_set)
+    {
+        i = chan->synth->per_track_audio
+            ? chan->channum % NUMBER_OF_RESERVED_CHANNELS_PER_TRACK : chan->channum;
+        chan->channel_type = (i == 9) ? CHANNEL_TYPE_DRUM : CHANNEL_TYPE_MELODIC;
+    }
     prognum = 0;
     banknum = (chan->channel_type == CHANNEL_TYPE_DRUM) ? DRUM_INST_BANK : 0;
 

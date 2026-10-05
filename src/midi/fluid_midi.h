@@ -333,6 +333,9 @@ struct _fluid_player_t
     handle_midi_tick_func_t tick_callback; /* function fired on each tick change */
     void *tick_userdata; /* pointer to user-defined data passed to tick_callback function */
 
+    int *channel_map; /* routing table [track * 16 + channel] -> synth channel, NULL = built-in layout */
+    int channel_map_ntracks; /* number of tracks covered by channel_map */
+
     int channel_isplaying[MAX_NUMBER_OF_CHANNELS]; /* flags indicating channels on which notes have played */
 };
 

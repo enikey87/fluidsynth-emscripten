@@ -578,17 +578,46 @@ fluid_midi_file_read_track(fluid_midi_file *mf, fluid_player_t *player, int num)
 
     fluid_midi_event_t *evt = track->cur;
 
-    while (evt) {
-        if(player->synth->per_track_audio &&
-                evt->channel >= NUMBER_OF_RESERVED_CHANNELS_PER_TRACK)
+    if(player->channel_map != NULL && num < player->channel_map_ntracks)
+    {
+        const int *row = player->channel_map + num * 16;
+        int ch;
+
+        for(ch = 0; ch < 16; ch++)
         {
-            FLUID_LOG(FLUID_ERR, "Independent track audio requires MIDI channels 0 through 9");
-            return FLUID_FAILED;
+            if(row[ch] >= player->synth->midi_channels)
+            {
+                FLUID_LOG(FLUID_ERR, "Channel map routes track %d channel %d to %d, "
+                          "outside the synth's %d MIDI channels",
+                          num, ch, row[ch], player->synth->midi_channels);
+                return FLUID_FAILED;
+            }
         }
-        if (evt->channel != 9 || player->synth->per_track_audio) {
-            evt->channel = num * NUMBER_OF_RESERVED_CHANNELS_PER_TRACK + evt->channel;
+
+        while(evt)
+        {
+            if(row[evt->channel] >= 0)
+            {
+                evt->channel = row[evt->channel];
+            }
+            evt = evt->next;
         }
-        evt = evt->next;
+    }
+    else
+    {
+        while(evt)
+        {
+            if(player->synth->per_track_audio &&
+                    evt->channel >= NUMBER_OF_RESERVED_CHANNELS_PER_TRACK)
+            {
+                FLUID_LOG(FLUID_ERR, "Independent track audio requires MIDI channels 0 through 9");
+                return FLUID_FAILED;
+            }
+            if (evt->channel != 9 || player->synth->per_track_audio) {
+                evt->channel = num * NUMBER_OF_RESERVED_CHANNELS_PER_TRACK + evt->channel;
+            }
+            evt = evt->next;
+        }
     }
 
     return FLUID_OK;
@@ -1725,6 +1754,8 @@ new_fluid_player(fluid_synth_t *synth)
     player->playlist = NULL;
     player->currentfile = NULL;
     player->division = 0;
+    player->channel_map = NULL;
+    player->channel_map_ntracks = 0;
 
     /* internal tempo (from MIDI file) in micro seconds per quarter note */
     player->sync_mode = 1; /* the player follows internal tempo change */
@@ -1802,6 +1833,9 @@ delete_fluid_player(fluid_player_t *player)
 
     delete_fluid_timer(player->system_timer);
     delete_fluid_sample_timer(player->synth, player->sample_timer);
+
+    FLUID_FREE(player->channel_map);
+    player->channel_map = NULL;
 
     while(player->playlist != NULL)
     {
@@ -1923,6 +1957,51 @@ fluid_player_set_tick_callback(fluid_player_t *player, handle_midi_tick_func_t h
 {
     player->tick_callback = handler;
     player->tick_userdata = handler_data;
+    return FLUID_OK;
+}
+
+/**
+ * Set a routing table from SMF track and file channel pairs to synth channels.
+ * @param player MIDI player instance
+ * @param map array of ntracks * 16 cells; map[track * 16 + channel] is the
+ *   synth channel the channel events of that SMF track are routed to, -1
+ *   leaves the channel as written in the file. The value -2 is reserved for
+ *   dropping events and is rejected for now.
+ * @param ntracks number of tracks the table covers
+ * @return #FLUID_OK or #FLUID_FAILED
+ *
+ * The table replaces the built-in per-track channel layout for files loaded
+ * after the call; the player copies the array, the caller may free it right
+ * after the call. Loading a file whose table routes an event to a synth
+ * channel at or beyond the synth's MIDI channel count fails the load.
+ */
+int
+fluid_player_set_channel_map(fluid_player_t *player, const int *map, int ntracks)
+{
+    int *copy;
+    int i;
+
+    fluid_return_val_if_fail(player != NULL, FLUID_FAILED);
+    fluid_return_val_if_fail(map != NULL, FLUID_FAILED);
+    fluid_return_val_if_fail(ntracks > 0 && ntracks <= MAX_NUMBER_OF_TRACKS, FLUID_FAILED);
+
+    for(i = 0; i < ntracks * 16; i++)
+    {
+        fluid_return_val_if_fail(map[i] >= -1, FLUID_FAILED); /* -2 (drop) is reserved */
+    }
+
+    copy = FLUID_ARRAY(int, ntracks * 16);
+
+    if(copy == NULL)
+    {
+        FLUID_LOG(FLUID_PANIC, "Out of memory");
+        return FLUID_FAILED;
+    }
+
+    FLUID_MEMCPY(copy, map, ntracks * 16 * sizeof(int));
+    FLUID_FREE(player->channel_map);
+    player->channel_map = copy;
+    player->channel_map_ntracks = ntracks;
     return FLUID_OK;
 }
 

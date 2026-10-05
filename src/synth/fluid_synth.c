@@ -8280,6 +8280,11 @@ void fluid_synth_api_exit(fluid_synth_t *synth)
  * @param chan MIDI channel number (0 to MIDI channel count - 1)
  * @param type MIDI channel type (#fluid_midi_channel_type)
  * @return #FLUID_OK on success, #FLUID_FAILED otherwise
+ *
+ * The type set by the application is remembered: fluid_synth_system_reset() and
+ * program resets recompute the type from the channel number only for channels
+ * whose type was never set this way. GS "rhythm part" and XG bank-select
+ * messages still override the type until the next reset.
  * @since 1.1.4
  */
 int fluid_synth_set_channel_type(fluid_synth_t *synth, int chan, int type)
@@ -8288,6 +8293,7 @@ int fluid_synth_set_channel_type(fluid_synth_t *synth, int chan, int type)
     FLUID_API_ENTRY_CHAN(FLUID_FAILED);
 
     synth->channel[chan]->channel_type = type;
+    synth->channel[chan]->channel_type_app_set = 1;
 
     FLUID_API_RETURN(FLUID_OK);
 }

@@ -26,6 +26,7 @@ const suffixes = ['', '-all-in-one', '-sf3', '-sf3-all-in-one']
 const FRAMES = 4096
 const FLUID_ERR = 1
 const FLUID_PLAYER_DONE = 3
+const CHANNEL_TYPE_DRUM = 1
 
 function assert (cond, msg) {
   if (!cond) throw new Error(msg)
@@ -80,6 +81,56 @@ function smf () {
     0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, 0, 96,
     0x4d, 0x54, 0x72, 0x6b, 0, 0, 0, track.length, ...track,
   ])
+}
+
+// Format 1, two drum tracks on file channel 9: track 0 sets CC7 100 and hits at
+// tick 0, track 1 sets CC7 20 and hits the same key at tick 96. The energy of
+// the two halves (before/after tick 72) is what the checks below compare.
+function drumSmf () {
+  const track = (volume, noteAt) => Uint8Array.from([
+    0, 0xb9, 7, volume,          // CC7 at tick 0
+    noteAt, 0x99, 36, 100,       // note on
+    24, 0x89, 36, 0,             // note off
+    0, 0xff, 0x2f, 0x00,         // end of track
+  ])
+  const chunk = (events) => [0x4d, 0x54, 0x72, 0x6b, 0, 0, 0, events.length, ...events]
+  return Uint8Array.from([
+    0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 1, 0, 2, 0, 96,
+    ...chunk(track(100, 0)), ...chunk(track(20, 96)),
+  ])
+}
+
+// Plays the drum SMF to completion, splitting the rendered energy into two
+// windows: blocks starting before tick 72 (first hit) and the rest (second hit).
+function playDrums (M, s, bytes, { map = null, type = false } = {}) {
+  const player = M._new_fluid_player(s.synth)
+  if (map) {
+    const ptr = M._malloc(map.byteLength)
+    M.HEAP32.set(map, ptr / 4)
+    const code = M._fluid_player_set_channel_map(player, ptr, 2)
+    M._free(ptr)
+    assert(code === 0, `fluid_player_set_channel_map failed: ${code}`)
+  }
+  if (type) {
+    M._fluid_synth_set_channel_type(s.synth, 9, CHANNEL_TYPE_DRUM)
+    M._fluid_synth_set_channel_type(s.synth, 19, CHANNEL_TYPE_DRUM)
+  }
+  // the reset every consumer issues between load and play: the types above must survive it
+  M._fluid_synth_system_reset(s.synth)
+  const p = M._malloc(bytes.length)
+  M.HEAPU8.set(bytes, p)
+  assert(M._fluid_player_add_mem(player, p, bytes.length) === 0, 'fluid_player_add_mem failed')
+  M._free(p)
+  assert(M._fluid_player_play(player) === 0, 'fluid_player_play failed')
+  const windows = [0, 0]
+  let blocks = 0
+  while (M._fluid_player_get_status(player) !== FLUID_PLAYER_DONE && blocks < 200) {
+    windows[M._fluid_player_get_current_tick(player) < 72 ? 0 : 1] += energy(M, s.synth)
+    blocks += 1
+  }
+  assert(M._fluid_player_get_status(player) === FLUID_PLAYER_DONE, `player not done after ${blocks} blocks`)
+  M._delete_fluid_player(player)
+  return windows
 }
 
 const checks = {
@@ -230,6 +281,45 @@ const checks = {
     const interp5 = render(() => {}, synth => M._fluid_synth_set_interp_method(synth, -1, 5))
     assert(differs(interp4, interp5), 'FLUID_INTERP_MID renders the same audio as 4th order')
     return `reverb fdn≠dat, limiter peak ${peak(unlimited).toFixed(2)}→${peak(limited).toFixed(2)}, interp 5≠4`
+  },
+
+  // Two drum tracks on file channel 9 with CC7 100 and 20: the channel map routes
+  // them to channels 9 and 19, both typed as drums before a system reset. The
+  // sticky type keeps them drums (bank 128), so each drummer keeps its own volume.
+  drums (M) {
+    const drumsSf2 = readFileSync(path.join(root, 'test', 'wasm', 'fixtures', 'drums.sf2'))
+    const bytes = drumSmf()
+    const bankOf = (synth, chan) => {
+      const ints = M._malloc(12)
+      M._fluid_synth_get_program(synth, chan, ints, ints + 4, ints + 8)
+      const bank = M.HEAP32[(ints + 4) / 4]
+      M._free(ints)
+      return bank
+    }
+
+    // routed and typed: different CC7 per channel, drum kit on both channels
+    const routed = newSynth(M)
+    loadSoundfont(M, routed.synth, 'drums.sf2', drumsSf2)
+    const map = new Int32Array(32).fill(-1)
+    map[0 * 16 + 9] = 9
+    map[1 * 16 + 9] = 19
+    const routedEnergy = playDrums(M, routed, bytes, { map, type: true })
+    assert(routedEnergy[0] > 1e-3 && routedEnergy[1] > 1e-3, `routed drums silent: ${routedEnergy}`)
+    assert(routedEnergy[0] > 4 * routedEnergy[1], `routed drum volumes did not separate: ${routedEnergy}`)
+    assert(bankOf(routed.synth, 9) === 128, `channel 9 not on the drum bank: ${bankOf(routed.synth, 9)}`)
+    assert(bankOf(routed.synth, 19) === 128, `channel 19 not on the drum bank: ${bankOf(routed.synth, 19)}`)
+    deleteSynth(M, routed)
+
+    // negative control, same SMF: no map, no typing - both parts land on channel 9,
+    // one CC7 wins and both hits render at the same volume
+    const shared = newSynth(M)
+    loadSoundfont(M, shared.synth, 'drums.sf2', drumsSf2)
+    const sharedEnergy = playDrums(M, shared, bytes)
+    deleteSynth(M, shared)
+    assert(sharedEnergy[0] > 1e-3 && sharedEnergy[1] > 1e-3, `shared drums silent: ${sharedEnergy}`)
+    assert(Math.abs(sharedEnergy[0] - sharedEnergy[1]) < 0.25 * Math.max(...sharedEnergy),
+      `shared drum volumes differ: ${sharedEnergy}`)
+    return `routed ${routedEnergy.map(v => v.toExponential(1))}, shared ${sharedEnergy.map(v => v.toExponential(1))}`
   },
 
   leak (M) {

@@ -106,6 +106,10 @@ struct _fluid_channel_t
 
     /* Drum channel flag, CHANNEL_TYPE_MELODIC, or CHANNEL_TYPE_DRUM. */
     enum fluid_midi_channel_type channel_type;
+    /* Non-zero once the application has set channel_type through
+     * fluid_synth_set_channel_type(). fluid_channel_init() then keeps that
+     * type across resets instead of recomputing it from the channel number. */
+    char channel_type_app_set;
     enum fluid_interp interp_method;                    /**< Interpolation method (enum fluid_interp) */
 
     unsigned char channel_pressure;                 /**< MIDI channel pressure from [0;127] */
