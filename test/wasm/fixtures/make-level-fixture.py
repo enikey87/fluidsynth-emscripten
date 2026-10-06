@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Writes level.sf2 and level.sf3: the same two looped sines as PCM and as Ogg Vorbis.
+"""Writes level.sf2, level.sf3 and drums.sf2: looped sines as SF2 and SF3.
 
-Program 0 peaks at 0.25 in both files. Program 1 peaks at 1.0 in the sf2 and at 1.5 in the sf3,
-which only a float codec can hold. Needs ffmpeg with libvorbis.
+level.*: the same two looped sines as PCM and as Ogg Vorbis. Program 0 peaks at 0.25
+in both files. Program 1 peaks at 1.0 in the sf2 and at 1.5 in the sf3, which only a
+float codec can hold. Needs ffmpeg with libvorbis.
+
+drums.sf2: one preset on bank 128, the GM drum-kit bank, so drum-typed channels
+have a kit to land on (VintageDreamsWaves stores its kits elsewhere).
 """
 import math
 import pathlib
@@ -39,7 +43,7 @@ def name(text, size=20):
     return text.encode().ljust(size, b'\0')
 
 
-def soundfont(blobs, compressed):
+def soundfont(blobs, compressed, bank=0):
     smpl, headers, offset = b'', b'', 0
     for index, blob in enumerate(blobs):
         if compressed:
@@ -56,7 +60,7 @@ def soundfont(blobs, compressed):
     headers += name('EOS') + b'\0' * 26
 
     count = len(blobs)
-    phdr = b''.join(name(f'level{i}') + struct.pack('<HHHIII', i, 0, i, 0, 0, 0) for i in range(count))
+    phdr = b''.join(name(f'level{i}') + struct.pack('<HHHIII', i, bank, i, 0, 0, 0) for i in range(count))
     phdr += name('EOP') + struct.pack('<HHHIII', 0, 0, count, 0, 0, 0)
     bags = b''.join(struct.pack('<HH', i, 0) for i in range(count + 1))
     pgen = b''.join(struct.pack('<HH', 41, i) for i in range(count)) + struct.pack('<HH', 0, 0)
@@ -79,3 +83,4 @@ def soundfont(blobs, compressed):
 
 (HERE / 'level.sf2').write_bytes(soundfont([pcm(sine(0.25)), pcm(sine(1.0))], compressed=False))
 (HERE / 'level.sf3').write_bytes(soundfont([vorbis(sine(0.25)), vorbis(sine(1.5))], compressed=True))
+(HERE / 'drums.sf2').write_bytes(soundfont([pcm(sine(0.5))], compressed=False, bank=128))

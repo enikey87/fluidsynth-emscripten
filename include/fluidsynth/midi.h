@@ -278,6 +278,29 @@ FLUID_DEPRECATED FLUIDSYNTH_API int fluid_player_set_bpm(fluid_player_t *player,
 FLUIDSYNTH_API int fluid_player_set_playback_callback(fluid_player_t *player, handle_midi_event_func_t handler, void *handler_data);
 FLUIDSYNTH_API int fluid_player_set_tick_callback(fluid_player_t *player, handle_midi_tick_func_t handler, void *handler_data);
 
+/**
+ * Set a routing table from SMF track and file channel pairs to synth channels.
+ *
+ * @param player MIDI File Player
+ * @param map array of @c ntracks * 16 cells; @c map[track * 16 + channel] is
+ *   the synth channel the channel events of that SMF track are routed to.
+ *   A cell of -1 leaves the events on the channel as written in the file.
+ *   The value -2 is reserved for dropping events and is rejected for now.
+ * @param ntracks number of tracks the table covers; tracks at or beyond this
+ *   index keep their channels as written in the file
+ * @return #FLUID_OK on success, #FLUID_FAILED otherwise
+ *
+ * The table replaces the built-in per-track channel layout for files loaded
+ * after the call; files are routed once at load time, so seek and loop are not
+ * re-routed. The player copies the array, the caller may free it right after
+ * the call. Loading a file whose table routes an event to a synth channel at
+ * or beyond the synth's MIDI channel count fails the load.
+ *
+ * @note The drum character of the target channels is not changed by this call;
+ *   use fluid_synth_set_channel_type() to type routed channels as drums.
+ */
+FLUIDSYNTH_API int fluid_player_set_channel_map(fluid_player_t *player, const int *map, int ntracks);
+
 FLUIDSYNTH_API int fluid_player_get_status(fluid_player_t *player);
 FLUIDSYNTH_API int fluid_player_get_current_tick(fluid_player_t *player);
 FLUIDSYNTH_API int fluid_player_get_total_ticks(fluid_player_t *player);
